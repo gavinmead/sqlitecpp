@@ -25,7 +25,7 @@ namespace sql {
         //see if the file exists. If so, try to open it, else create a new file
         if(!fs::exists(this->db_file)) {
             //TODO: Make sure it is a regular file
-            this->db_file_descriptor = ::open(this->db_file.c_str(), O_RDWR | O_CREAT);
+            this->db_file_descriptor = ::open(this->db_file.c_str(), O_RDWR | O_CREAT, 0664);
             if (this->db_file_descriptor == -1) {
                 auto result = SQLITE_CANTOPEN;
                 this->update_last_message(result, is_error(result), "could not open file");
