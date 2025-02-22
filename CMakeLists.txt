@@ -14,9 +14,12 @@ if(ENABLE_COVERAGE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
 endif()
 
 # Define the library sources
-set(LIBRARY_SOURCES
-        src/example.cc
-)
+#set(LIBRARY_SOURCES
+#        src/example.cc
+#
+#)
+
+file(GLOB_RECURSE LIBRARY_SOURCES "src/*.cc")
 
 # Create static library
 add_library(${PROJECT_NAME} STATIC ${LIBRARY_SOURCES})
