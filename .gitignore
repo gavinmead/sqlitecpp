@@ -48,3 +48,4 @@ build_coverage/
 _deps/
 Testing/
 build/**
+lib

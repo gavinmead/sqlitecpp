@@ -7,8 +7,9 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(googletest)
 
+file(GLOB_RECURSE TEST_SOURCES "*.cc")
 # Test executable
-add_executable(unit_tests test_example.cc)
+add_executable(unit_tests ${TEST_SOURCES})
 target_link_libraries(unit_tests PRIVATE
         ${PROJECT_NAME}  # Link to our static library
         gtest_main
