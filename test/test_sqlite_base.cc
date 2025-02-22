@@ -11,6 +11,7 @@
 #include <memory>
 
 namespace fs = std::filesystem;
+using namespace sql;
 
 std::string generate_random_string(size_t length) {
     const std::basic_string characters = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";

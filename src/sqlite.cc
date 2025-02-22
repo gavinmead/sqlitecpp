@@ -5,65 +5,71 @@
 #include "sqlite.h"
 #include <filesystem>
 #include <optional>
-#include <fstream>
+#include <unistd.h>
+#include <fcntl.h>  // for close()
 #include <set>
 
 namespace fs = std::filesystem;
 
-std::set<SQLITE_RESULT> errors = {
-        SQLITE_CANTOPEN,
-};
+namespace sql {
+    std::set<SQLITE_RESULT> errors = {
+            SQLITE_CANTOPEN,
+    };
 
-bool is_error(SQLITE_RESULT result) {
-    return errors.contains(result);
-}
-
-SQLITE_RESULT SQLiteConnection::open() {
-
-    //see if the file exists. If so, try to open it, else create a new file
-    if(!fs::exists(this->db_file)) {
-        //TODO: Make sure it is a regular file
-        this->db_file_stream = std::ofstream(this->db_file, std::ios::binary);
-
-        //TODO: initialize the DB internals
-
-        auto result = SQLITE_OK;
-        this->update_last_message(result, is_error(result), "new database created successfully");
-        return result;
-
-    } else {
-        //Open the database file
-        this->db_file_stream = std::ofstream(this->db_file, std::ios::binary);
-
-        //TODO: initialize the DB internals
-        auto result = SQLITE_OK;
-        this->update_last_message(result, is_error(result), "database opened successfully");
-        return result;
+    bool is_error(SQLITE_RESULT result) {
+        return errors.contains(result);
     }
 
-}
+    SQLITE_RESULT SQLiteConnection::open() {
 
-SQLITE_RESULT SQLiteConnection::close() {
-    //Treat this as an idempotent operation
-    if(this->db_file_stream) {
-        if(this->db_file_stream.is_open()) {
-            this->db_file_stream.close();
+        //see if the file exists. If so, try to open it, else create a new file
+        if(!fs::exists(this->db_file)) {
+            //TODO: Make sure it is a regular file
+            this->db_file_descriptor = ::open(this->db_file.c_str(), O_RDWR | O_CREAT);
+            if (this->db_file_descriptor == -1) {
+                auto result = SQLITE_CANTOPEN;
+                this->update_last_message(result, is_error(result), "could not open file");
+                return result;
+            }
+            //TODO: initialize the DB internals
+
+            auto result = SQLITE_OK;
+            this->update_last_message(result, is_error(result), "new database created successfully");
+            return result;
+
+        } else {
+            //Open the database file
+
+            //TODO: initialize the DB internals
+            auto result = SQLITE_OK;
+            this->update_last_message(result, is_error(result), "database opened successfully");
+            return result;
+        }
+
+    }
+
+    SQLITE_RESULT SQLiteConnection::close() {
+        //Treat this as an idempotent operation
+        //Close the file descriptor and the mmap
+        if (this->db_file_descriptor != -1) {
+            ::close(this->db_file_descriptor);
+            this->db_file_descriptor = -1;
+        }
+        auto result = SQLITE_OK;
+        this->update_last_message(result, is_error(result), "database closed");
+        return SQLITE_OK;
+    }
+
+    std::optional<SQLiteMessage> SQLiteConnection::lastMessage() {
+        if (this->last_message_available) {
+            return SQLiteMessage{
+                    this->last_message->result,
+                    is_error(this->last_message->result),
+                    this->last_message->message
+            };
+        } else {
+            return std::nullopt;
         }
     }
-
-    auto result = SQLITE_OK;
-    this->update_last_message(result, is_error(result), "database closed");
-    return SQLITE_OK;
 }
 
-std::optional<SQLiteMessage> SQLiteConnection::lastMessage() {
-    if (this->last_message_available) {
-        return SQLiteMessage{
-            this->last_message->result,
-            is_error(this->last_message->result),
-            this->last_message->message
-        };
-    } else {
-        return std::nullopt;
-    }
-}
