@@ -13,12 +13,6 @@ if(ENABLE_COVERAGE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     message(STATUS "Code coverage enabled")
 endif()
 
-# Define the library sources
-#set(LIBRARY_SOURCES
-#        src/example.cc
-#
-#)
-
 file(GLOB_RECURSE LIBRARY_SOURCES "src/*.cc")
 
 # Create static library

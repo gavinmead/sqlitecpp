@@ -48,9 +48,28 @@ namespace {
     };
 
     TEST_F(FileSetupFixture, DefaultConstructor) {
-        EXPECT_NO_THROW({auto conn = SQLiteConnection(filename);});
-
+        auto conn = std::make_unique<SQLiteConnection>(SQLiteConnection(filename));
+        auto header = conn->header();
+        //Header is only available after the database is opened
+        ASSERT_FALSE(header.has_value());
     };
+
+    TEST_F(FileSetupFixture, HeaderAvailableAfterOpen) {
+        auto conn = std::make_unique<SQLiteConnection>(SQLiteConnection(filename));
+        auto result = conn->open();
+        auto header = conn->header();
+        ASSERT_TRUE(header.has_value());
+    };
+
+    TEST_F(FileSetupFixture, HeaderNotAvailableAfterClose) {
+        auto conn = std::make_unique<SQLiteConnection>(SQLiteConnection(filename));
+        auto result = conn->open();
+        result = conn->close();
+        ASSERT_EQ(result, SQLITE_OK);
+        auto header = conn->header();
+        //Header is only available after the database is opened
+        ASSERT_FALSE(header.has_value());
+    }
 
     TEST_F(FileSetupFixture, CreateOpenAndClose) {
         auto conn = std::make_unique<SQLiteConnection>(SQLiteConnection(filename));

@@ -31,6 +31,7 @@ namespace sql {
                 this->update_last_message(result, is_error(result), "could not open file");
                 return result;
             }
+            this->opened = true;
             //TODO: initialize the DB internals
 
             auto result = SQLITE_OK;
@@ -38,7 +39,7 @@ namespace sql {
             return result;
 
         } else {
-            //Open the database file
+            //open the database file
 
             //TODO: initialize the DB internals
             auto result = SQLITE_OK;
@@ -54,6 +55,7 @@ namespace sql {
         if (this->db_file_descriptor != -1) {
             ::close(this->db_file_descriptor);
             this->db_file_descriptor = -1;
+            this->opened = false;
         }
         auto result = SQLITE_OK;
         this->update_last_message(result, is_error(result), "database closed");
