@@ -101,4 +101,5 @@ namespace {
         auto conn = std::make_unique<SQLiteConnection>(SQLiteConnection("test"));
         ASSERT_FALSE(conn->lastMessage().has_value());
     };
+
 };

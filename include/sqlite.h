@@ -13,8 +13,24 @@
 #include <fstream>
 #include <memory>
 #include "db_header.h"
+#include <sys/mman.h>
+#include <utility>
 
 namespace sql {
+
+    // Custom deleter for the unique_ptr that will unmap the memory (Claude.AI helped here :))
+    struct MMapDeleter {
+        std::size_t size;
+
+        MMapDeleter(std::size_t s) : size(s) {}
+
+        void operator()(std::byte* ptr) const {
+            if (ptr) {
+                munmap(static_cast<void*>(ptr), size);
+            }
+        }
+    };
+
     using SQLITE_RESULT = int;
 
 //Response codes
@@ -52,6 +68,7 @@ namespace sql {
             last_message = std::make_unique<SQLiteMessage>();
             last_message_available = false;
             db_header = std::make_shared<DefaultDBHeader>(pageSize);
+
         }
 
         SQLITE_RESULT open();
@@ -64,12 +81,13 @@ namespace sql {
             } else {
                 return std::nullopt;
             }
-
         }
 
         std::optional<SQLiteMessage> lastMessage();
 
     private:
+
+        SQLITE_RESULT setup_db_mmap(int db_file_descriptor, bool is_new_db);
 
         void update_last_message(SQLITE_RESULT result, bool isError, std::string message) {
             this->last_message_available = true;
@@ -81,7 +99,7 @@ namespace sql {
         //Filename used to either create or open an existing SQLite database
         std::string db_file;
         bool opened{false};
-        int db_file_descriptor{};
+        std::optional<std::unique_ptr<std::byte[], MMapDeleter>> db_file_mmap; //We make optional to delay initialization until open
         bool last_message_available;
         std::unique_ptr<SQLiteMessage> last_message;
         std::shared_ptr<DBHeader> db_header;
