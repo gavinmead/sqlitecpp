@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <fcntl.h>  // for close()
 #include <set>
+#include <vector>
 
 namespace fs = std::filesystem;
 
@@ -103,10 +104,9 @@ namespace sql {
 
         ::close(db_file_descriptor);
 
-        this->db_file_mmap = std::unique_ptr<std::byte[], MMapDeleter>(
-                static_cast<std::byte*>(mapped),
-                MMapDeleter(size)
-        );
+        this->db_file_mmap = std::make_unique<std::vector<std::byte>>();
+        auto bytes = static_cast<std::byte*>(mapped);
+        this->db_file_mmap->get()->assign(bytes, bytes + size);
 
         return SQLITE_OK;
     }
