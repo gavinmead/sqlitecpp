@@ -4,6 +4,26 @@ project(sqlitecpp)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Add clang-format target if the program is found
+find_program(CLANG_FORMAT "clang-format")
+if(CLANG_FORMAT)
+    # Get all project files
+    file(GLOB_RECURSE ALL_SOURCE_FILES
+            ${PROJECT_SOURCE_DIR}/src/*.cc
+            ${PROJECT_SOURCE_DIR}/include/**/*.h
+            ${PROJECT_SOURCE_DIR}/include/*.h
+    )
+
+    add_custom_target(
+            format
+            COMMAND ${CLANG_FORMAT}
+            -i
+            ${ALL_SOURCE_FILES}
+    )
+else()
+    message(STATUS "clang-format not found, format target not available")
+endif()
+
 # Coverage option
 option(ENABLE_COVERAGE "Enable coverage reporting" OFF)
 if(ENABLE_COVERAGE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
@@ -30,3 +50,4 @@ if(BUILD_TESTS)
     enable_testing()
     add_subdirectory(test)
 endif()
+
