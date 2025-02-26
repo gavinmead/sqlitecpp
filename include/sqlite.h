@@ -15,21 +15,9 @@
 #include "db_header.h"
 #include <sys/mman.h>
 #include <utility>
+#include <vector>
 
 namespace sql {
-
-    // Custom deleter for the unique_ptr that will unmap the memory (Claude.AI helped here :))
-    struct MMapDeleter {
-        std::size_t size;
-
-        MMapDeleter(std::size_t s) : size(s) {}
-
-        void operator()(std::byte* ptr) const {
-            if (ptr) {
-                munmap(static_cast<void*>(ptr), size);
-            }
-        }
-    };
 
     using SQLITE_RESULT = int;
 
@@ -99,7 +87,7 @@ namespace sql {
         //Filename used to either create or open an existing SQLite database
         std::string db_file;
         bool opened{false};
-        std::optional<std::unique_ptr<std::byte[], MMapDeleter>> db_file_mmap; //We make optional to delay initialization until open
+        std::optional<std::unique_ptr<std::vector<std::byte>>> db_file_mmap; //We make optional to delay initialization until open
         bool last_message_available;
         std::unique_ptr<SQLiteMessage> last_message;
         std::shared_ptr<DBHeader> db_header;
