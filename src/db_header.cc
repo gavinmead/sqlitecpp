@@ -7,8 +7,7 @@
 namespace sql {
 
 std::string DefaultDBHeader::name() {
-  return "SQLite format 3\0"; // NOLINT null terminator is required by sqlite
-                              // header
+  return this->header_name;
 }
 
 int DefaultDBHeader::pageSize() {

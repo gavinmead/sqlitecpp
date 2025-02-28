@@ -10,6 +10,7 @@
 #include <memory>
 #include <vector>
 #include <expected>
+#include <algorithm>
 
 namespace sql::stream {
 

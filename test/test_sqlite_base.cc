@@ -95,6 +95,8 @@ TEST_F(FileSetupFixture, CreateOpenAndClose) {
   } else {
     FAIL();
   }
+
+
 };
 
 TEST(SQLiteConnection, NoLastMessage) {
