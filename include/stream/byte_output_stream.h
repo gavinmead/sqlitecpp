@@ -9,41 +9,69 @@
 #include <cstddef>
 #include <memory>
 #include <vector>
+#include <expected>
 
 namespace sql::stream {
+
+enum class OutputStreamStatus {
+  Ok,
+};
+
+enum class OutputStreamError {
+  PositionOutOfBounds,
+
+};
+
 class ByteOutputStream {
  public:
-  // Switch to a shared_ptr in a future iteration
-  explicit ByteOutputStream(const std::vector<std::byte>& buffer) {
-    this->buffer = std::make_shared<std::vector<std::byte>>(buffer);
-  }
+
+  explicit ByteOutputStream(const std::shared_ptr<std::vector<std::byte>>& buffer)
+      : buffer(buffer) {}
 
   template <typename T>
-  void write(T value, std::endian endian = std::endian::native) {
+  std::expected<OutputStreamStatus, OutputStreamError> write(T value, std::endian endian = std::endian::native) {
     auto size = sizeof(T);
     auto bytes = reinterpret_cast<std::byte*>(&value);
+
+    if (this->current_position + size > buffer->size()) {
+      return std::unexpected(OutputStreamError::PositionOutOfBounds);
+    }
 
     if (endian == std::endian::big) {
       std::reverse(bytes, bytes + size);
     }
     for (size_t i = 0; i < size; i++) {
-      buffer->push_back(bytes[i]);
+      buffer->at(this->current_position) = bytes[i];
+      this->current_position++;
     }
+    return OutputStreamStatus::Ok;
   };
 
-  void writeString(std::string value) {
+  std::expected<OutputStreamStatus, OutputStreamError> writeString(std::string value) {
     for (auto c : value) {
-      buffer->push_back(std::byte(c));
+      buffer->at(this->current_position) = std::byte(c);
+      this->current_position++;
     }
-    buffer->push_back(std::byte(0));
+    buffer->at(this->current_position) = std::byte(0);
+    this->current_position++;
+    return OutputStreamStatus::Ok;
   }
 
   std::shared_ptr<std::vector<std::byte>> getBytes() {
     return std::shared_ptr<std::vector<std::byte>>({buffer});
   }
 
+  int getCurrentPosition() {
+    return this->current_position;
+  }
+
+  bool isEndOfStream() {
+    return this->current_position >= buffer->size();
+  }
+
  private:
   std::shared_ptr<std::vector<std::byte>> buffer;
+  int current_position = 0;
 };
 }; // namespace sql::stream
 

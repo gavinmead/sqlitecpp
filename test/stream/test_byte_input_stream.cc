@@ -5,7 +5,7 @@
 #include "stream/byte_input_stream.h"
 
 TEST(ByteInputStream, ReadInt) {
-      auto out = sql::stream::ByteOutputStream(std::vector<std::byte>());
+      auto out = sql::stream::ByteOutputStream(std::make_shared<std::vector<std::byte>>(512));
       out.write<int>(42);
       auto buffer = out.getBytes();
       auto in = sql::stream::ByteInputStream(buffer);
@@ -14,7 +14,7 @@ TEST(ByteInputStream, ReadInt) {
 }
 
 TEST(ByteInputStream, ReadIntWithBigEndian) {
-      auto out = sql::stream::ByteOutputStream(std::vector<std::byte>());
+      auto out = sql::stream::ByteOutputStream(std::make_shared<std::vector<std::byte>>(512));
       out.write<int>(42, std::endian::big);
       auto buffer = out.getBytes();
       auto in = sql::stream::ByteInputStream(buffer);
@@ -23,7 +23,7 @@ TEST(ByteInputStream, ReadIntWithBigEndian) {
 }
 
 TEST(ByteInputStream, ReadNumbers) {
-      auto out = sql::stream::ByteOutputStream(std::vector<std::byte>());
+      auto out = sql::stream::ByteOutputStream(std::make_shared<std::vector<std::byte>>(512));
       out.write<int>(42, std::endian::big);
       out.write<double>(24.24, std::endian::big);
       auto buffer = out.getBytes();
@@ -33,7 +33,7 @@ TEST(ByteInputStream, ReadNumbers) {
 }
 
 TEST(ByteInputStream, ReadString) {
-      auto out = sql::stream::ByteOutputStream(std::vector<std::byte>());
+      auto out = sql::stream::ByteOutputStream(std::make_shared<std::vector<std::byte>>(512));
       out.writeString("Hello, World!");
       auto buffer = out.getBytes();
       auto in = sql::stream::ByteInputStream(buffer);
@@ -41,7 +41,7 @@ TEST(ByteInputStream, ReadString) {
 }
 
 TEST(ByteInputStream, ReadStringWithNumbers) {
-      auto out = sql::stream::ByteOutputStream(std::vector<std::byte>());
+      auto out = sql::stream::ByteOutputStream(std::make_shared<std::vector<std::byte>>(512));
       out.writeString("Hello, World!");
       out.write<int>(42);
       auto buffer = out.getBytes();
@@ -51,7 +51,7 @@ TEST(ByteInputStream, ReadStringWithNumbers) {
 }
 
 TEST(ByteInputStream, ChangePosition) {
-  auto out = sql::stream::ByteOutputStream(std::vector<std::byte>());
+  auto out = sql::stream::ByteOutputStream(std::make_shared<std::vector<std::byte>>(512));
   out.write<int>(42);
   out.writeString("Hello, World!");
   auto buffer = out.getBytes();
@@ -64,19 +64,19 @@ TEST(ByteInputStream, ChangePosition) {
 }
 
 TEST(ByteInputStream, ChangePositionOutOfBounds) {
-  auto out = sql::stream::ByteOutputStream(std::vector<std::byte>());
+  auto out = sql::stream::ByteOutputStream(std::make_shared<std::vector<std::byte>>(512));
   out.write<int>(42);
   out.writeString("Hello, World!");
   auto buffer = out.getBytes();
   auto in = sql::stream::ByteInputStream(buffer);
 
-  auto result = in.setCurrentPosition(100);
+  auto result = in.setCurrentPosition(513);
   EXPECT_EQ(result, std::unexpected(sql::stream::InputStreamError::PositionOutOfBounds));
   EXPECT_EQ(in.getCurrentPosition(), 0);
 }
 
 TEST(ByteInputStream, EndOfStream) {
-  auto out = sql::stream::ByteOutputStream(std::vector<std::byte>());
+  auto out = sql::stream::ByteOutputStream(std::make_shared<std::vector<std::byte>>(18));
   out.write<int>(42);
   out.writeString("Hello, World!");
   auto buffer = out.getBytes();
@@ -89,7 +89,7 @@ TEST(ByteInputStream, EndOfStream) {
 }
 
 TEST(ByteInputStream, Reset) {
-  auto out = sql::stream::ByteOutputStream(std::vector<std::byte>());
+  auto out = sql::stream::ByteOutputStream(std::make_shared<std::vector<std::byte>>(512));
   out.write<int>(42);
   auto buffer = out.getBytes();
   auto in = sql::stream::ByteInputStream(buffer);
