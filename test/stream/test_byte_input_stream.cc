@@ -34,7 +34,7 @@ TEST(ByteInputStream, ReadNumbers) {
 
 TEST(ByteInputStream, ReadString) {
       auto out = sql::stream::ByteOutputStream(std::vector<std::byte>());
-      out.write<std::string>("Hello, World!");
+      out.writeString("Hello, World!");
       auto buffer = out.getBytes();
       auto in = sql::stream::ByteInputStream(buffer);
       EXPECT_EQ(in.readString(), "Hello, World!");
