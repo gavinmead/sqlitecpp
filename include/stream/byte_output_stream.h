@@ -31,6 +31,13 @@ class ByteOutputStream {
     }
   };
 
+  void writeString(std::string value) {
+    for (auto c : value) {
+      buffer->push_back(std::byte(c));
+    }
+    buffer->push_back(std::byte(0));
+  }
+
   std::shared_ptr<std::vector<std::byte>> getBytes() {
     return std::shared_ptr<std::vector<std::byte>>({buffer});
   }
