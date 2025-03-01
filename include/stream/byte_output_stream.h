@@ -55,7 +55,7 @@ class ByteOutputStream {
     buffer->at(this->current_position) = std::byte(0);
     this->current_position++;
     return OutputStreamStatus::Ok;
-  }
+
 
   std::shared_ptr<std::vector<std::byte>> getBytes() {
     return std::shared_ptr<std::vector<std::byte>>({buffer});
