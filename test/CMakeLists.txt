@@ -8,6 +8,7 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(googletest)
 
 file(GLOB_RECURSE TEST_SOURCES "*.cc")
+#file(GLOB_RECURSE TEST_SOURCES "*.h")
 # Test executable
 add_executable(unit_tests ${TEST_SOURCES})
 target_link_libraries(unit_tests PRIVATE
