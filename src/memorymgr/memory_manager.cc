@@ -23,6 +23,15 @@ MMapMemoryPoolManager::MMapMemoryPoolManager(
   this->memory_blocks = std::list<MMapMemoryBlock>{};
 };
 
+MMapMemoryPoolManager::~MMapMemoryPoolManager() {
+  if (this->intialized) {
+    //TODO: Add a constructor parameter to run msync first
+    //We use the new block_count since that would have been updated over
+    //the lifetime of the memory pool manager
+    munmap(this->mmap_ptr, this->block_size * this->block_count);
+  }
+}
+
 void MMapMemoryPoolManager::initialize() {
   // Open up the file and create the initial blocks as defined by
   // initial_block_count * block_size
