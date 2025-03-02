@@ -84,7 +84,8 @@ class MMapMemoryPoolManager : public MemoryPoolManager {
       unsigned int block_size,
       unsigned int initial_block_count,
       std::string filename);
-  ~MMapMemoryPoolManager() override = default;
+
+  ~MMapMemoryPoolManager() override;
 
   std::shared_ptr<MemoryBlock> getBlock(unsigned int block_id) override;
   void allocateBlocks(unsigned int block_count) override;
