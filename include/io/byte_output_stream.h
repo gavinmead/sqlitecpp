@@ -73,6 +73,6 @@ class ByteOutputStream {
   std::shared_ptr<std::vector<std::byte>> buffer;
   int current_position = 0;
 };
-}; // namespace sql::stream
+}; // namespace sql::io
 
 #endif // SQLITECPP_BYTE_OUTPUT_STREAM_H

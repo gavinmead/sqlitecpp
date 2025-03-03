@@ -1,8 +1,8 @@
 #include <gtest/gtest.h>
 #include <ranges>
 #include <vector>
-#include "stream/byte_output_stream.h"
-#include "stream/byte_input_stream.h"
+#include "io/byte_output_stream.h"
+#include "io/byte_input_stream.h"
 
 TEST(ByteInputStream, ReadInt) {
       auto out = sql::stream::ByteOutputStream(std::make_shared<std::vector<std::byte>>(512));

@@ -82,6 +82,6 @@ class ByteInputStream {
   std::shared_ptr<std::vector<std::byte>> buffer;
   int buffer_position = 0;
 };
-} // namespace sql::stream
+} // namespace sql::io
 
 #endif // SQLITECPP_BYTE_INPUT_STREAM_H
