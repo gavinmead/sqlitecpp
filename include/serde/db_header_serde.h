@@ -6,8 +6,8 @@
 #define SQLITECPP_DB_HEADER_SERDE_H
 
 #include "db_header.h"
-#include "stream/byte_input_stream.h"
-#include "stream/byte_output_stream.h"
+#include "io/byte_input_stream.h"
+#include "io/byte_output_stream.h"
 #include <memory>
 
 

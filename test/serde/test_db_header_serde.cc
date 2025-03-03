@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 #include "serde/db_header_serde.h"
-#include "stream/byte_output_stream.h"
+#include "io/byte_output_stream.h"
 #include "db_header.h"
 
 TEST(DBHeaderSerde, SerdeOk) {

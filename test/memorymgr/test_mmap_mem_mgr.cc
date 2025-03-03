@@ -10,6 +10,9 @@ TEST_F(FileSetupFixture, MemoryManagerInitializeOk) {
     ASSERT_NO_THROW({
       memory_manager->initialize();
     });
+    //Assert the file size is 1024
+    auto file_size = fs::file_size(filename);
+    EXPECT_EQ(file_size, 1024); //512 * 2 = 1024
   }
 };
 

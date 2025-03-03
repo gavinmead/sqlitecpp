@@ -8,8 +8,8 @@
 #include <list>
 #include <memory>
 #include <string>
-#include "stream/byte_input_stream.h"
-#include "stream/byte_output_stream.h"
+#include "io/byte_input_stream.h"
+#include "io/byte_output_stream.h"
 
 
 namespace sql::memory {
@@ -18,10 +18,10 @@ class MemoryBlock {
  public:
   MemoryBlock() = default;
   virtual ~MemoryBlock() = default;
-//  virtual sql::stream::ByteInputStream getInputStream(
+//  virtual sql::io::ByteInputStream getInputStream(
 //      unsigned int start_pos,
 //      unsigned int end_pos) = 0;
-//  virtual sql::stream::ByteOutputStream getOutputStream(
+//  virtual sql::io::ByteOutputStream getOutputStream(
 //      unsigned int start_pos,
 //      unsigned int end_pos) = 0;
 
@@ -58,11 +58,11 @@ class MMapMemoryBlock : public MemoryBlock {
   MMapMemoryBlock(unsigned int block_size, unsigned int block_id);
   ~MMapMemoryBlock() override = default;
 
-//  sql::stream::ByteInputStream getInputStream(
+//  sql::io::ByteInputStream getInputStream(
 //      unsigned int start_pos,
 //      unsigned int end_pos) override;
 //
-//  sql::stream::ByteOutputStream getOutputStream(
+//  sql::io::ByteOutputStream getOutputStream(
 //      unsigned int start_pos,
 //      unsigned int end_pos) override;
 
