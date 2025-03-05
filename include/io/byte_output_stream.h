@@ -25,8 +25,12 @@ enum class OutputStreamError {
 class ByteOutputStream {
  public:
 
-  explicit ByteOutputStream(const std::shared_ptr<std::vector<std::byte>>& buffer)
-      : buffer(buffer) {}
+  explicit ByteOutputStream(const std::shared_ptr<std::vector<std::byte>>& buffer, int limit=1024)
+      : buffer(buffer), limit(limit) {
+        if(buffer->capacity() > limit) {
+            throw std::runtime_error("Buffer capacity is greater than the limit");
+        }
+  }
 
   template <typename T>
   std::expected<OutputStreamStatus, OutputStreamError> write(T value, std::endian endian = std::endian::native) {
@@ -72,6 +76,7 @@ class ByteOutputStream {
  private:
   std::shared_ptr<std::vector<std::byte>> buffer;
   int current_position = 0;
+  int limit = 1024;
 };
 }; // namespace sql::io
 

@@ -45,3 +45,11 @@ TEST(OutputByteStream, InitialState) {
   EXPECT_EQ(out.getCurrentPosition(), 0);
   EXPECT_FALSE(out.isEndOfStream());
 };
+
+TEST(OutputByteStream, BadLimit) {
+  EXPECT_THROW(sql::stream::ByteOutputStream(std::make_shared<std::vector<std::byte>>(1025), 512), std::runtime_error);
+};
+
+TEST(OutputByteStream, AtLimitOk) {
+  EXPECT_NO_THROW(sql::stream::ByteOutputStream(std::make_shared<std::vector<std::byte>>(1024), 1024));
+}

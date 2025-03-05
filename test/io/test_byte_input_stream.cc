@@ -94,5 +94,12 @@ TEST(ByteInputStream, Reset) {
   auto buffer = out.getBytes();
   auto in = sql::stream::ByteInputStream(buffer);
   EXPECT_EQ(in.read<int>(), 42);
+}
 
+TEST(ByteInputStream, BadLimit) {
+  EXPECT_THROW(sql::stream::ByteInputStream(std::make_shared<std::vector<std::byte>>(1025)), std::runtime_error);
+};
+
+TEST(ByteInputStream, AtLimitOk) {
+        EXPECT_NO_THROW(sql::stream::ByteInputStream(std::make_shared<std::vector<std::byte>>(1024), 1024));
 }
