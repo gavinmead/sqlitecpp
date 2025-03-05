@@ -26,8 +26,12 @@ enum class InputStreamError {
 class ByteInputStream {
  public:
   explicit ByteInputStream(
-      const std::shared_ptr<std::vector<std::byte>>& buffer)
-      : buffer(buffer) {};
+      const std::shared_ptr<std::vector<std::byte>>& buffer, int limit=1024)
+      : buffer(buffer), limit(limit) {
+          if(buffer->capacity() > limit) {
+              throw std::runtime_error("Buffer capacity is greater than the limit");
+          }
+        };
 
   template <typename T>
   std::expected<T, InputStreamError> read(std::endian endian = std::endian::native) {
@@ -81,6 +85,7 @@ class ByteInputStream {
  private:
   std::shared_ptr<std::vector<std::byte>> buffer;
   int buffer_position = 0;
+  int limit = 1024;
 };
 } // namespace sql::io
 
