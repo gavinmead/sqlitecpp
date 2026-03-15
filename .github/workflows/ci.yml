@@ -1,0 +1,232 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  CONAN_HOME: ${{ github.workspace }}/.conan2
+
+jobs:
+  build:
+    name: Build (${{ matrix.os }}, ${{ matrix.compiler }}, ${{ matrix.build_type }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-14]
+        compiler: [gcc, clang]
+        build_type: [Debug, Release]
+        exclude:
+          # Use native clang on macOS
+          - os: macos-14
+            compiler: gcc
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Conan
+        run: |
+          pip install conan
+          conan profile detect --force
+
+      - name: Setup GCC (Linux)
+        if: matrix.os == 'ubuntu-24.04' && matrix.compiler == 'gcc'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y g++-14
+          echo "CC=gcc-14" >> $GITHUB_ENV
+          echo "CXX=g++-14" >> $GITHUB_ENV
+
+      - name: Setup Clang (Linux)
+        if: matrix.os == 'ubuntu-24.04' && matrix.compiler == 'clang'
+        run: |
+          wget https://apt.llvm.org/llvm.sh
+          chmod +x llvm.sh
+          sudo ./llvm.sh 18
+          echo "CC=clang-18" >> $GITHUB_ENV
+          echo "CXX=clang++-18" >> $GITHUB_ENV
+
+      - name: Setup Xcode (macOS)
+        if: matrix.os == 'macos-14'
+        run: |
+          sudo xcode-select -s /Applications/Xcode_15.4.app
+
+      - name: Install Ninja
+        uses: seanmiddleditch/gha-setup-ninja@v5
+
+      - name: Cache Conan packages
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.CONAN_HOME }}
+          key: conan-${{ matrix.os }}-${{ matrix.compiler }}-${{ matrix.build_type }}-${{ hashFiles('conanfile.py') }}
+          restore-keys: |
+            conan-${{ matrix.os }}-${{ matrix.compiler }}-${{ matrix.build_type }}-
+            conan-${{ matrix.os }}-${{ matrix.compiler }}-
+
+      - name: Install dependencies
+        run: |
+          conan install . \
+            --output-folder=build \
+            --build=missing \
+            -s build_type=${{ matrix.build_type }} \
+            -s compiler.cppstd=23
+
+      - name: Configure
+        run: |
+          cmake -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+            -DCMAKE_TOOLCHAIN_FILE=build/conan_toolchain.cmake
+
+      - name: Build
+        run: cmake --build build
+
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+
+  sanitizers:
+    name: Sanitizer (${{ matrix.sanitizer }})
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        sanitizer: [address, thread, undefined]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Conan
+        run: |
+          pip install conan
+          conan profile detect --force
+
+      - name: Setup Clang
+        run: |
+          wget https://apt.llvm.org/llvm.sh
+          chmod +x llvm.sh
+          sudo ./llvm.sh 18
+          echo "CC=clang-18" >> $GITHUB_ENV
+          echo "CXX=clang++-18" >> $GITHUB_ENV
+
+      - name: Install Ninja
+        uses: seanmiddleditch/gha-setup-ninja@v5
+
+      - name: Cache Conan packages
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.CONAN_HOME }}
+          key: conan-sanitizer-${{ matrix.sanitizer }}-${{ hashFiles('conanfile.py') }}
+
+      - name: Install dependencies
+        run: |
+          conan install . \
+            --output-folder=build \
+            --build=missing \
+            -s build_type=Debug \
+            -s compiler.cppstd=23
+
+      - name: Configure
+        run: |
+          cmake -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_TOOLCHAIN_FILE=build/conan_toolchain.cmake \
+            -DSQLITECPP_ENABLE_SANITIZERS=ON \
+            -DSQLITECPP_SANITIZER=${{ matrix.sanitizer }}
+
+      - name: Build
+        run: cmake --build build
+
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+        env:
+          ASAN_OPTIONS: detect_leaks=1:detect_stack_use_after_return=1
+          TSAN_OPTIONS: second_deadlock_stack=1
+          UBSAN_OPTIONS: print_stacktrace=1
+
+  coverage:
+    name: Coverage
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install tools
+        run: |
+          pip install conan gcovr
+          conan profile detect --force
+          sudo apt-get update
+          sudo apt-get install -y g++-14 lcov
+          echo "CC=gcc-14" >> $GITHUB_ENV
+          echo "CXX=g++-14" >> $GITHUB_ENV
+
+      - name: Install Ninja
+        uses: seanmiddleditch/gha-setup-ninja@v5
+
+      - name: Cache Conan packages
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.CONAN_HOME }}
+          key: conan-coverage-${{ hashFiles('conanfile.py') }}
+
+      - name: Install dependencies
+        run: |
+          conan install . \
+            --output-folder=build \
+            --build=missing \
+            -s build_type=Debug \
+            -s compiler.cppstd=23
+
+      - name: Configure
+        run: |
+          cmake -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_TOOLCHAIN_FILE=build/conan_toolchain.cmake \
+            -DSQLITECPP_ENABLE_COVERAGE=ON
+
+      - name: Build
+        run: cmake --build build
+
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Generate coverage report
+        run: |
+          gcovr --root . \
+            --exclude tests/ \
+            --exclude build/ \
+            --xml coverage.xml \
+            --html coverage.html \
+            --html-details
+
+      - name: Upload to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: coverage.xml
+          fail_ci_if_error: true
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Upload HTML report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage.html

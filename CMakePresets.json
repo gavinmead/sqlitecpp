@@ -1,0 +1,257 @@
+{
+    "version": 6,
+    "cmakeMinimumRequired": {
+        "major": 3,
+        "minor": 21,
+        "patch": 0
+    },
+    "configurePresets": [
+        {
+            "name": "base",
+            "hidden": true,
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/${presetName}",
+            "cacheVariables": {
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+                "CMAKE_PROJECT_TOP_LEVEL_INCLUDES": "${sourceDir}/cmake/conan_provider.cmake"
+            }
+        },
+        {
+            "name": "clion-base",
+            "hidden": true,
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/cmake-build-${presetName}",
+            "cacheVariables": {
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+                "CMAKE_PROJECT_TOP_LEVEL_INCLUDES": "${sourceDir}/cmake/conan_provider.cmake"
+            }
+        },
+        {
+            "name": "clion-debug",
+            "inherits": "clion-base",
+            "displayName": "CLion Debug",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "SQLITECPP_BUILD_TESTS": "ON"
+            }
+        },
+        {
+            "name": "clion-release",
+            "inherits": "clion-base",
+            "displayName": "CLion Release",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "SQLITECPP_BUILD_TESTS": "ON"
+            }
+        },
+        {
+            "name": "dev-debug",
+            "inherits": "base",
+            "displayName": "Development Debug",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "SQLITECPP_BUILD_TESTS": "ON"
+            }
+        },
+        {
+            "name": "dev-release",
+            "inherits": "base",
+            "displayName": "Development Release",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "SQLITECPP_BUILD_TESTS": "ON"
+            }
+        },
+        {
+            "name": "ci-gcc-debug",
+            "inherits": "base",
+            "displayName": "CI GCC Debug",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_CXX_COMPILER": "g++",
+                "SQLITECPP_BUILD_TESTS": "ON"
+            }
+        },
+        {
+            "name": "ci-gcc-release",
+            "inherits": "base",
+            "displayName": "CI GCC Release",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "CMAKE_CXX_COMPILER": "g++",
+                "SQLITECPP_BUILD_TESTS": "ON"
+            }
+        },
+        {
+            "name": "ci-clang-debug",
+            "inherits": "base",
+            "displayName": "CI Clang Debug",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_CXX_COMPILER": "clang++",
+                "SQLITECPP_BUILD_TESTS": "ON"
+            }
+        },
+        {
+            "name": "ci-clang-release",
+            "inherits": "base",
+            "displayName": "CI Clang Release",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "CMAKE_CXX_COMPILER": "clang++",
+                "SQLITECPP_BUILD_TESTS": "ON"
+            }
+        },
+        {
+            "name": "sanitizer-asan",
+            "inherits": "base",
+            "displayName": "Address Sanitizer",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "SQLITECPP_ENABLE_SANITIZERS": "ON",
+                "SQLITECPP_SANITIZER": "address",
+                "SQLITECPP_BUILD_TESTS": "ON"
+            }
+        },
+        {
+            "name": "sanitizer-tsan",
+            "inherits": "base",
+            "displayName": "Thread Sanitizer",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "SQLITECPP_ENABLE_SANITIZERS": "ON",
+                "SQLITECPP_SANITIZER": "thread",
+                "SQLITECPP_BUILD_TESTS": "ON"
+            }
+        },
+        {
+            "name": "sanitizer-ubsan",
+            "inherits": "base",
+            "displayName": "Undefined Behavior Sanitizer",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "SQLITECPP_ENABLE_SANITIZERS": "ON",
+                "SQLITECPP_SANITIZER": "undefined",
+                "SQLITECPP_BUILD_TESTS": "ON"
+            }
+        },
+        {
+            "name": "coverage",
+            "inherits": "base",
+            "displayName": "Coverage Build",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "SQLITECPP_ENABLE_COVERAGE": "ON",
+                "SQLITECPP_BUILD_TESTS": "ON"
+            }
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "clion-debug",
+            "configurePreset": "clion-debug"
+        },
+        {
+            "name": "clion-release",
+            "configurePreset": "clion-release"
+        },
+        {
+            "name": "dev-debug",
+            "configurePreset": "dev-debug"
+        },
+        {
+            "name": "dev-release",
+            "configurePreset": "dev-release"
+        },
+        {
+            "name": "ci-gcc-debug",
+            "configurePreset": "ci-gcc-debug"
+        },
+        {
+            "name": "ci-gcc-release",
+            "configurePreset": "ci-gcc-release"
+        },
+        {
+            "name": "ci-clang-debug",
+            "configurePreset": "ci-clang-debug"
+        },
+        {
+            "name": "ci-clang-release",
+            "configurePreset": "ci-clang-release"
+        },
+        {
+            "name": "sanitizer-asan",
+            "configurePreset": "sanitizer-asan"
+        },
+        {
+            "name": "sanitizer-tsan",
+            "configurePreset": "sanitizer-tsan"
+        },
+        {
+            "name": "sanitizer-ubsan",
+            "configurePreset": "sanitizer-ubsan"
+        },
+        {
+            "name": "coverage",
+            "configurePreset": "coverage"
+        }
+    ],
+    "testPresets": [
+        {
+            "name": "clion-debug",
+            "configurePreset": "clion-debug",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "clion-release",
+            "configurePreset": "clion-release",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "dev-debug",
+            "configurePreset": "dev-debug",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "dev-release",
+            "configurePreset": "dev-release",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "ci-gcc-debug",
+            "configurePreset": "ci-gcc-debug",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "ci-gcc-release",
+            "configurePreset": "ci-gcc-release",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "ci-clang-debug",
+            "configurePreset": "ci-clang-debug",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "ci-clang-release",
+            "configurePreset": "ci-clang-release",
+            "output": {
+                "outputOnFailure": true
+            }
+        }
+    ]
+}

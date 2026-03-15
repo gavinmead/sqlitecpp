@@ -1,0 +1,26 @@
+BasedOnStyle: LLVM
+IndentWidth: 4
+ColumnLimit: 100
+PointerAlignment: Left
+AccessModifierOffset: -4
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+AlwaysBreakTemplateDeclarations: Yes
+BreakBeforeBraces: Attach
+BreakConstructorInitializers: BeforeComma
+IncludeBlocks: Regroup
+IncludeCategories:
+  - Regex: '^<sqlite/'
+    Priority: 1
+  - Regex: '^<(gtest|gmock)'
+    Priority: 3
+  - Regex: '^<'
+    Priority: 2
+  - Regex: '.*'
+    Priority: 4
+IndentCaseLabels: false
+NamespaceIndentation: None
+SortIncludes: CaseSensitive
+SpaceAfterTemplateKeyword: true
+Standard: c++23

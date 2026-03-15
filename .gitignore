@@ -37,5 +37,38 @@
 *.out
 *.app
 
-# debug information files
+# Debug information files
 *.dwo
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.cache/
+compile_commands.json
+
+# Build directories
+build/
+cmake-build-*/
+out/
+
+# Conan
+CMakeUserPresets.json
+conan_toolchain.cmake
+conanbuild*
+conanrun*
+graph_info.json
+
+# Coverage
+*.gcda
+*.gcno
+*.gcov
+coverage.xml
+coverage.html
+coverage/
+
+# OS
+.DS_Store
+Thumbs.db
