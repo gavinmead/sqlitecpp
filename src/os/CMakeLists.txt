@@ -1,15 +1,16 @@
 # OS abstraction layer
 
-add_library(sqlite_os INTERFACE)
+add_library(sqlite_os
+      errors.cpp
+)
 add_library(sqlite::os ALIAS sqlite_os)
 
-target_include_directories(sqlite_os INTERFACE
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+target_include_directories(sqlite_os PUBLIC
+      $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
 )
 
-# When implementation files are added:
-# add_library(sqlite_os
-#     file.cpp
-# )
-# target_set_warnings(sqlite_os)
-# target_enable_sanitizers(sqlite_os)
+target_set_warnings(sqlite_os)
+
+if(SQLITECPP_ENABLE_SANITIZERS)
+  target_enable_sanitizers(sqlite_os)
+endif()

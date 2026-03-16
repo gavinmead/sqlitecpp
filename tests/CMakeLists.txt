@@ -18,17 +18,17 @@ function(add_sqlite_test name)
 endfunction()
 
 # Unit tests
-# add_subdirectory(unit)
+add_subdirectory(unit)
 
 # Integration tests
 # add_subdirectory(integration)
 
 # Placeholder test to verify the build works
-add_executable(placeholder_test
-    placeholder_test.cpp
-)
-target_link_libraries(placeholder_test PRIVATE
-    GTest::gtest
-    GTest::gtest_main
-)
-gtest_discover_tests(placeholder_test)
+#add_executable(placeholder_test
+#    placeholder_test.cpp
+#)
+#target_link_libraries(placeholder_test PRIVATE
+#    GTest::gtest
+#    GTest::gtest_main
+#)
+#gtest_discover_tests(placeholder_test)

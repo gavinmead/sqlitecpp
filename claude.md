@@ -325,3 +325,7 @@ Types: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `build`, `ci`
 - Schema management
 - Transaction support
 - Query result handling
+
+# Code Review
+- When reviewing Pull Requests, focus on the files changed in the PR and not the overall project.
+- Evaluate adherence to C++23 idioms and the conventions defined in this file.

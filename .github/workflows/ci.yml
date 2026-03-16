@@ -212,6 +212,7 @@ jobs:
       - name: Generate coverage report
         run: |
           gcovr --root . \
+            --gcov-executable gcov-14 \
             --exclude tests/ \
             --exclude build/ \
             --xml coverage.xml \
