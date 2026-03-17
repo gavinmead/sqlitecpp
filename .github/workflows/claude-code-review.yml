@@ -38,6 +38,7 @@ jobs:
 
             Use the repository's CLAUDE.md for guidance on style, conventions, and educational goals.
             Be constructive and helpful in your feedback.
+            The feedback should be written in markdown.
 
             Use `gh pr comment` with your Bash tool to leave your review as a comment on the PR.
 
