@@ -10,6 +10,7 @@ function(add_sqlite_test name)
         GTest::gtest
         GTest::gtest_main
     )
+    target_include_directories(${name} PRIVATE ${CMAKE_CURRENT_FUNCTION_LIST_DIR})
     target_set_warnings(${name})
     if(SQLITECPP_ENABLE_SANITIZERS)
         target_enable_sanitizers(${name})
