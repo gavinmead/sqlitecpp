@@ -63,6 +63,26 @@ TEST_F(StdFileTest, OpenOnDirectoryFailure) {
           AllOf(HasSubstr(tmp_dir_.string()), HasSubstr("not a file")));
 }
 
+TEST_F(StdFileTest, OpenCreateExclusiveFileExistsFailure) {
+    auto file = create_file("test.db", {});
+
+    auto result = sqlite::os::open(file, {.create=true, .exclusive = true});
+
+    ASSERT_FALSE(result.has_value());
+    EXPECT_EQ(result.error().code, ErrorCode::AlreadyExists);
+    EXPECT_THAT(result.error().message,
+          AllOf(HasSubstr("create and exclusive options are true and file"), HasSubstr(file.string()), HasSubstr("already exists")));
+}
+
+TEST_F(StdFileTest, OpenCreateNew) {
+    auto file = tmp_dir_ / "test.db";
+
+    auto result = sqlite::os::open(file, {.create=true, .exclusive = false});
+
+    ASSERT_TRUE(result.has_value());
+    EXPECT_NE(*result, nullptr);
+}
+
 TEST_F(StdFileTest, FixtureCreatesAndCleansUpTempDir) {
     // Verify the directory exists during the test
     EXPECT_TRUE(fs::exists(tmp_dir_));
