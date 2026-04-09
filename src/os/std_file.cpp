@@ -20,27 +20,44 @@ namespace sqlite::os {
             return std::unexpected(make_error(ErrorCode::InvalidArgument, std::format("path {} is not a file", path.string())));
         }
 
-        if (opts.create && opts.exclusive) {
-            if (file_exists) {
-                return std::unexpected(make_error(ErrorCode::AlreadyExists, std::format("create and exclusive options are true and file {} already exists", path.string())));
+        int flags = O_RDWR;
+
+        if (opts.create) {
+            flags |= O_CREAT;
+        }
+
+        if (opts.exclusive) {
+            flags |= O_EXCL;
+        }
+
+        if (opts.truncate) {
+            flags |= O_TRUNC;
+        }
+
+        if (opts.read_only) {
+            flags |= O_RDONLY;
+        }
+
+        auto fd = ::open(path.string().c_str(), flags);
+        if (fd == -1) {
+            auto ec = errno;
+
+            switch (ec) {
+                case ENOENT:
+                    return std::unexpected(make_error(ErrorCode::FileNotFound,
+                        std::format("file {} does not exist", path.string())));
+                case EEXIST:
+                    return std::unexpected(make_error(ErrorCode::AlreadyExists,
+                        std::format("file {} already exists", path.string())));
+                case EACCES:
+                    return std::unexpected(make_error(ErrorCode::PermissionDenied,std::format("permission denied for file {}", path.string())));
+                default:
+                    return std::unexpected(make_error(ErrorCode::IoError,
+                        std::format("failed to open {}: {}", path.string(), std::strerror(ec))));
             }
         }
 
-        if (opts.create && !opts.exclusive) {
-            auto fd = ::open(path.c_str(), O_CREAT);
-            if (fd == -1) {
-                std::unexpected(make_error(ErrorCode::IoError, std::format("failed to open file {}", path.string())));
-            }
-
-            return std::unique_ptr<File>(new StdFile(fd, path, opts.read_only));
-        }
-
-        //if opts.create && exclusve -? create a new file, fail if it already exists
-        //if opts.create && !exclusive; open an existing file, or create one if absent
-        //if opts.read_only set truncate to false.
-
-        // Can access StdFile's private members here
-
+        return std::unique_ptr<File>(new StdFile(fd, path, opts.read_only));
     }
 
     auto StdFile::read(std::span<std::byte> buf, uint64_t offset)

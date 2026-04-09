@@ -71,7 +71,7 @@ TEST_F(StdFileTest, OpenCreateExclusiveFileExistsFailure) {
     ASSERT_FALSE(result.has_value());
     EXPECT_EQ(result.error().code, ErrorCode::AlreadyExists);
     EXPECT_THAT(result.error().message,
-          AllOf(HasSubstr("create and exclusive options are true and file"), HasSubstr(file.string()), HasSubstr("already exists")));
+          AllOf(HasSubstr("file"), HasSubstr(file.string()), HasSubstr("already exists")));
 }
 
 TEST_F(StdFileTest, OpenCreateNew) {
