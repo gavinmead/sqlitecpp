@@ -1,3 +1,4 @@
+#include <array>
 #include <cstdlib>
 #include <filesystem>
 #include <format>
@@ -71,7 +72,7 @@ TEST_F(StdFileTest, OpenCreateExclusiveFileExistsFailure) {
     ASSERT_FALSE(result.has_value());
     EXPECT_EQ(result.error().code, ErrorCode::AlreadyExists);
     EXPECT_THAT(result.error().message,
-          AllOf(HasSubstr("file"), HasSubstr(file.string()), HasSubstr("already exists")));
+          AllOf(HasSubstr("open failed"), HasSubstr(file.string()), HasSubstr("already exists")));
 }
 
 TEST_F(StdFileTest, OpenCreateNew) {
@@ -81,6 +82,37 @@ TEST_F(StdFileTest, OpenCreateNew) {
 
     ASSERT_TRUE(result.has_value());
     EXPECT_NE(*result, nullptr);
+}
+
+TEST_F(StdFileTest, ReadSqliteHeaderEmptyBuffer) {
+    auto db_path = fs::path(TEST_FIXTURES_DIR) / "test.db";
+
+    auto file = sqlite::os::open(db_path, {.read_only = true});
+    ASSERT_TRUE(file.has_value());
+
+    // SQLite header is always "SQLite format 3\0" (16 bytes)
+    std::array<std::byte, 0> buf{};
+    auto result = (*file)->read(buf, 0);
+
+    ASSERT_TRUE(result.has_value());
+    EXPECT_EQ(result, 0);
+}
+
+TEST_F(StdFileTest, ReadSqliteHeader) {
+    auto db_path = fs::path(TEST_FIXTURES_DIR) / "test.db";
+
+    auto file = sqlite::os::open(db_path, {.read_only = true});
+    ASSERT_TRUE(file.has_value());
+
+    // SQLite header is always "SQLite format 3\0" (16 bytes)
+    std::array<std::byte, 16> buf{};
+    auto result = file.value()->read(buf, 0);
+
+    ASSERT_TRUE(result.has_value());
+    EXPECT_EQ(*result, 16u);
+
+    std::string_view header(reinterpret_cast<const char*>(buf.data()), 15);
+    EXPECT_EQ(header, "SQLite format 3");
 }
 
 TEST_F(StdFileTest, FixtureCreatesAndCleansUpTempDir) {
