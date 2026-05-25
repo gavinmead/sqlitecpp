@@ -25,6 +25,8 @@ namespace sqlite::os {
             case EBADF:
                 return make_error(ErrorCode::IoError,
                     std::format("{} failed: invalid file descriptor for {}", operation, path.string()));
+            // GCOVR_EXCL_START -- can't reliably produce a full disk, I/O fault,
+            // or bad-address fault from a unit test
             case ENOSPC:
                 return make_error(ErrorCode::IoError,
                     std::format("{} failed: no space left on device for {}", operation, path.string()));
@@ -34,6 +36,7 @@ namespace sqlite::os {
             case EFAULT:
                 return make_error(ErrorCode::InvalidArgument,
                     std::format("{} failed: buffer pointer outside accessible address space for {}", operation, path.string()));
+            // GCOVR_EXCL_STOP
             default:
                 return make_error(ErrorCode::IoError,
                     std::format("{} failed on {}: {}", operation, path.string(), std::strerror(ec)));
@@ -96,7 +99,7 @@ namespace sqlite::os {
         -> std::expected<size_t, Error> {
 
         if (fd_ == -1) {
-            return std::unexpected(map_errno(EBADF, path_, "pread"));
+            return std::unexpected(map_errno(EBADF, path_, "pread")); // GCOVR_EXCL_LINE
         }
 
         // No reason for a syscall here
@@ -107,7 +110,7 @@ namespace sqlite::os {
         auto result = ::pread(fd_, buf.data(), buf.size(), offset);
 
         if (result == -1) {
-            return std::unexpected(map_errno(errno, path_, "read"));
+            return std::unexpected(map_errno(errno, path_, "read")); // GCOVR_EXCL_LINE
         }
 
         return result;
@@ -117,7 +120,7 @@ namespace sqlite::os {
         -> std::expected<size_t, Error> {
 
         if (fd_ == -1) {
-            return std::unexpected(map_errno(EBADF, path_, "write"));
+            return std::unexpected(map_errno(EBADF, path_, "write")); // GCOVR_EXCL_LINE
         }
 
         if (buf.empty()) {
@@ -135,12 +138,12 @@ namespace sqlite::os {
 
     auto StdFile::size() -> std::expected<uint64_t, Error> {
         if (fd_ == -1) {
-            return std::unexpected(map_errno(EBADF, path_, "size"));
+            return std::unexpected(map_errno(EBADF, path_, "size")); // GCOVR_EXCL_LINE
         }
 
         struct stat statbuf;
         if (fstat(fd_, &statbuf) == -1) {
-            return std::unexpected(map_errno(errno, path_, "fstat"));
+            return std::unexpected(map_errno(errno, path_, "fstat")); // GCOVR_EXCL_LINE
         }
 
         return statbuf.st_size;
@@ -148,19 +151,19 @@ namespace sqlite::os {
 
     auto StdFile::sync() -> std::expected<void, Error> {
         if (fd_ == -1) {
-            return std::unexpected(map_errno(EBADF, path_, "sync"));
+            return std::unexpected(map_errno(EBADF, path_, "sync")); // GCOVR_EXCL_LINE
         }
 
         auto result = ::fsync(fd_);
         if (result == -1) {
-            return std::unexpected(map_errno(errno, path_, "sync"));
+            return std::unexpected(map_errno(errno, path_, "sync")); // GCOVR_EXCL_LINE
         }
         return {};
     }
 
     auto StdFile::truncate(uint64_t new_size) -> std::expected<void, Error> {
         if (fd_ == -1) {
-            return std::unexpected(map_errno(EBADF, path_, "truncate"));
+            return std::unexpected(map_errno(EBADF, path_, "truncate")); // GCOVR_EXCL_LINE
         }
 
         auto result = ::ftruncate(fd_, new_size);

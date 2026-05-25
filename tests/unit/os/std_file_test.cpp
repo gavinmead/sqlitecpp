@@ -5,6 +5,7 @@
 #include <fstream>
 #include <random>
 #include <string>
+#include <unistd.h>
 #include <gmock/gmock-matchers.h>
 
 #include <gtest/gtest.h>
@@ -350,4 +351,51 @@ TEST_F(StdFileTest, TruncateToSameSizeIsNoOp) {
 
     EXPECT_EQ(*(*file)->size(), contents.size());
     EXPECT_EQ(read_all(path), contents);
+}
+
+TEST_F(StdFileTest, OpenNonExistentWithoutCreateFails) {
+    auto path = tmp_path("missing.db");
+
+    auto result = sqlite::os::open(path, {});
+
+    ASSERT_FALSE(result.has_value());
+    EXPECT_EQ(result.error().code, ErrorCode::FileNotFound);
+}
+
+TEST_F(StdFileTest, OpenWithoutPermissionFails) {
+    if (::geteuid() == 0) {
+        GTEST_SKIP() << "running as root bypasses permission checks";
+    }
+
+    auto path = create_file("noperm.db", "data");
+    fs::permissions(path, fs::perms::none);
+
+    auto result = sqlite::os::open(path, {});
+
+    ASSERT_FALSE(result.has_value());
+    EXPECT_EQ(result.error().code, ErrorCode::PermissionDenied);
+}
+
+TEST_F(StdFileTest, WriteToReadOnlyFileFails) {
+    auto path = create_file("readonly.db", "existing");
+
+    auto file = sqlite::os::open(path, {.read_only = true});
+    ASSERT_TRUE(file.has_value());
+
+    auto result = (*file)->write(as_bytes("nope"), 0);
+
+    ASSERT_FALSE(result.has_value());
+    EXPECT_EQ(result.error().code, ErrorCode::IoError);
+}
+
+TEST_F(StdFileTest, TruncateReadOnlyFileFails) {
+    auto path = create_file("readonly_trunc.db", "existing");
+
+    auto file = sqlite::os::open(path, {.read_only = true});
+    ASSERT_TRUE(file.has_value());
+
+    auto result = (*file)->truncate(2);
+
+    ASSERT_FALSE(result.has_value());
+    EXPECT_EQ(result.error().code, ErrorCode::IoError);
 }
