@@ -38,6 +38,8 @@ namespace sqlite::os {
         /// @param buf    Data to write. Extends the file if offset + buf.size() > size().
         /// @param offset Byte offset from the start of the file.
         /// @returns      Number of bytes actually written, or an Error on failure.
+        ///               May be a short write (result < buf.size()); callers must
+        ///               loop to write the remaining bytes.
         [[nodiscard]] virtual auto write(std::span<const std::byte> buf, uint64_t offset)
             -> std::expected<size_t, Error> = 0;
 
@@ -73,11 +75,23 @@ namespace sqlite::os {
     /// - Exclusive: Required before writing; no other locks may be held.
     enum class LockType { Shared, Reserved, Exclusive };
 
+    /// Options controlling how a database file is opened.
+    ///
+    /// Uses designated initializers for clarity at the call site:
+    /// @code
+    ///   auto db = open("my.db", {.create = true});
+    ///   auto tmp = open("scratch.db", {.create = true, .exclusive = true, .truncate = true});
+    /// @endcode
+    ///
+    /// Flag interactions:
+    /// - `create` without `exclusive`: opens an existing file, or creates one if absent.
+    /// - `create` with `exclusive`: creates a new file; fails if it already exists.
+    /// - `truncate` is ignored when `read_only` is set.
     struct OpenOptions {
-        bool create    = false;  // create if doesn't exist
-        bool read_only = false;  // open in read-only mode
-        bool truncate  = false;  // truncate to zero on open
-        bool exclusive = false;  // fail if file already exists (O_EXCL)
+        bool create    = false;  ///< Create the file if it does not already exist.
+        bool read_only = false;  ///< Open in read-only mode; write operations will fail.
+        bool truncate  = false;  ///< Truncate the file to zero length on open.
+        bool exclusive = false;  ///< Fail if the file already exists (requires `create`).
     };
 
 

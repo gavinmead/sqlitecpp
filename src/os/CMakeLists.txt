@@ -2,6 +2,7 @@
 
 add_library(sqlite_os
       errors.cpp
+      std_file.cpp
 )
 add_library(sqlite::os ALIAS sqlite_os)
 
