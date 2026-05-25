@@ -301,3 +301,53 @@ TEST_F(StdFileTest, SyncIsIdempotent) {
     EXPECT_TRUE((*file)->sync().has_value());
     EXPECT_TRUE((*file)->sync().has_value());
 }
+
+TEST_F(StdFileTest, TruncateShrinksFile) {
+    auto path = create_file("shrink.db", "0123456789");
+
+    auto file = sqlite::os::open(path, {});
+    ASSERT_TRUE(file.has_value());
+
+    ASSERT_TRUE((*file)->truncate(4).has_value());
+
+    EXPECT_EQ(*(*file)->size(), 4u);
+    EXPECT_EQ(read_all(path), "0123");
+}
+
+TEST_F(StdFileTest, TruncateExtendsFileWithZeros) {
+    auto path = create_file("extend.db", "abc");
+
+    auto file = sqlite::os::open(path, {});
+    ASSERT_TRUE(file.has_value());
+
+    ASSERT_TRUE((*file)->truncate(6).has_value());
+
+    EXPECT_EQ(*(*file)->size(), 6u);
+    // The original content is preserved; the new region is zero-filled.
+    EXPECT_EQ(read_all(path), std::string("abc") + std::string("\0\0\0", 3));
+}
+
+TEST_F(StdFileTest, TruncateToZeroEmptiesFile) {
+    auto path = create_file("emptyme.db", "not empty");
+
+    auto file = sqlite::os::open(path, {});
+    ASSERT_TRUE(file.has_value());
+
+    ASSERT_TRUE((*file)->truncate(0).has_value());
+
+    EXPECT_EQ(*(*file)->size(), 0u);
+    EXPECT_EQ(read_all(path), "");
+}
+
+TEST_F(StdFileTest, TruncateToSameSizeIsNoOp) {
+    constexpr std::string_view contents = "unchanged";
+    auto path = create_file("same.db", std::string(contents));
+
+    auto file = sqlite::os::open(path, {});
+    ASSERT_TRUE(file.has_value());
+
+    ASSERT_TRUE((*file)->truncate(contents.size()).has_value());
+
+    EXPECT_EQ(*(*file)->size(), contents.size());
+    EXPECT_EQ(read_all(path), contents);
+}

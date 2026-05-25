@@ -159,7 +159,16 @@ namespace sqlite::os {
     }
 
     auto StdFile::truncate(uint64_t new_size) -> std::expected<void, Error> {
-        return std::unexpected(make_error(ErrorCode::NotSupported, "not implemented"));
+        if (fd_ == -1) {
+            return std::unexpected(map_errno(EBADF, path_, "truncate"));
+        }
+
+        auto result = ::ftruncate(fd_, new_size);
+        if (result == -1) {
+            return std::unexpected(map_errno(errno, path_, "truncate"));
+        }
+
+        return {};
     }
 
     auto StdFile::lock(LockType type) -> std::expected<void, Error> {
