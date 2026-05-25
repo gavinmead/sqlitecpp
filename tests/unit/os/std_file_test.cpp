@@ -398,7 +398,7 @@ TEST_F(StdFileTest, TruncateReadOnlyFileFails) {
 TEST_F(StdFileTest, OpenReadOnlyWithCreateIsRejected) {
     auto path = tmp_path("ro_create.db");
 
-    auto result = sqlite::os::open(path, {.read_only = true, .create = true});
+    auto result = sqlite::os::open(path, {.create = true, .read_only = true});
 
     ASSERT_FALSE(result.has_value());
     EXPECT_EQ(result.error().code, ErrorCode::InvalidArgument);
