@@ -6,6 +6,7 @@
 #include <format>
 #include <fcntl.h>
 #include <unistd.h>
+#include <sys/stat.h>
 
 namespace sqlite::os {
 
@@ -133,7 +134,16 @@ namespace sqlite::os {
     }
 
     auto StdFile::size() -> std::expected<uint64_t, Error> {
-        return std::unexpected(make_error(ErrorCode::NotSupported, "not implemented"));
+        if (fd_ == -1) {
+            return std::unexpected(map_errno(EBADF, path_, "size"));
+        }
+
+        struct stat statbuf;
+        if (fstat(fd_, &statbuf) == -1) {
+            return std::unexpected(map_errno(errno, path_, "fstat"));
+        }
+
+        return statbuf.st_size;
     }
 
     auto StdFile::sync() -> std::expected<void, Error> {

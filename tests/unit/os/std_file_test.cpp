@@ -206,3 +206,59 @@ TEST_F(StdFileTest, WriteRoundTripsThroughRead) {
     EXPECT_EQ(*read_result, payload.size());
     EXPECT_EQ(std::string_view(reinterpret_cast<const char*>(buf.data()), buf.size()), payload);
 }
+
+TEST_F(StdFileTest, SizeOfEmptyFileIsZero) {
+    auto path = tmp_path("empty_size.db");
+
+    auto file = sqlite::os::open(path, {.create = true});
+    ASSERT_TRUE(file.has_value());
+
+    auto result = (*file)->size();
+
+    ASSERT_TRUE(result.has_value());
+    EXPECT_EQ(*result, 0u);
+}
+
+TEST_F(StdFileTest, SizeReflectsExistingContent) {
+    constexpr std::string_view contents = "twelve bytes";
+    auto path = create_file("sized.db", std::string(contents));
+
+    auto file = sqlite::os::open(path, {});
+    ASSERT_TRUE(file.has_value());
+
+    auto result = (*file)->size();
+
+    ASSERT_TRUE(result.has_value());
+    EXPECT_EQ(*result, contents.size());
+}
+
+TEST_F(StdFileTest, SizeGrowsAfterWrite) {
+    auto path = tmp_path("grow.db");
+
+    auto file = sqlite::os::open(path, {.create = true});
+    ASSERT_TRUE(file.has_value());
+
+    constexpr std::string_view payload = "payload";
+    ASSERT_TRUE((*file)->write(as_bytes(payload), 0).has_value());
+
+    auto result = (*file)->size();
+
+    ASSERT_TRUE(result.has_value());
+    EXPECT_EQ(*result, payload.size());
+}
+
+TEST_F(StdFileTest, SizeIncludesSparseGapFromOffsetWrite) {
+    auto path = tmp_path("sparse_size.db");
+
+    auto file = sqlite::os::open(path, {.create = true});
+    ASSERT_TRUE(file.has_value());
+
+    constexpr std::string_view payload = "abc";
+    constexpr uint64_t offset = 4;
+    ASSERT_TRUE((*file)->write(as_bytes(payload), offset).has_value());
+
+    auto result = (*file)->size();
+
+    ASSERT_TRUE(result.has_value());
+    EXPECT_EQ(*result, offset + payload.size());
+}
