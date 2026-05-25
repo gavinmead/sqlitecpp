@@ -120,3 +120,89 @@ TEST_F(StdFileTest, FixtureCreatesAndCleansUpTempDir) {
     EXPECT_TRUE(fs::exists(tmp_dir_));
     EXPECT_TRUE(fs::is_directory(tmp_dir_));
 }
+
+/// Helper: views a string's bytes as a span suitable for File::write.
+static std::span<const std::byte> as_bytes(std::string_view s) {
+    return {reinterpret_cast<const std::byte*>(s.data()), s.size()};
+}
+
+/// Helper: reads the entire file at path into a string (independent of File).
+static std::string read_all(const fs::path& path) {
+    std::ifstream ifs(path, std::ios::binary);
+    return {std::istreambuf_iterator<char>(ifs), std::istreambuf_iterator<char>()};
+}
+
+TEST_F(StdFileTest, WriteReturnsByteCountAndPersists) {
+    auto path = tmp_path("write.db");
+
+    auto file = sqlite::os::open(path, {.create = true});
+    ASSERT_TRUE(file.has_value());
+
+    constexpr std::string_view payload = "hello world";
+    auto result = (*file)->write(as_bytes(payload), 0);
+
+    ASSERT_TRUE(result.has_value());
+    EXPECT_EQ(*result, payload.size());
+    EXPECT_EQ(read_all(path), payload);
+}
+
+TEST_F(StdFileTest, WriteEmptyBufferReturnsZeroAndWritesNothing) {
+    auto path = tmp_path("empty.db");
+
+    auto file = sqlite::os::open(path, {.create = true});
+    ASSERT_TRUE(file.has_value());
+
+    std::array<std::byte, 0> buf{};
+    auto result = (*file)->write(buf, 0);
+
+    ASSERT_TRUE(result.has_value());
+    EXPECT_EQ(*result, 0u);
+    EXPECT_EQ(fs::file_size(path), 0u);
+}
+
+TEST_F(StdFileTest, WriteAtOffsetCreatesSparseGap) {
+    auto path = tmp_path("offset.db");
+
+    auto file = sqlite::os::open(path, {.create = true});
+    ASSERT_TRUE(file.has_value());
+
+    constexpr std::string_view payload = "abc";
+    auto result = (*file)->write(as_bytes(payload), 4);
+
+    ASSERT_TRUE(result.has_value());
+    EXPECT_EQ(*result, payload.size());
+
+    // Bytes before the offset are zero-filled; the payload follows.
+    EXPECT_EQ(read_all(path), std::string("\0\0\0\0", 4) + std::string(payload));
+}
+
+TEST_F(StdFileTest, WriteOverwritesExistingBytesAtOffset) {
+    auto path = create_file("overwrite.db", "AAAAAAAA");
+
+    auto file = sqlite::os::open(path, {});
+    ASSERT_TRUE(file.has_value());
+
+    constexpr std::string_view payload = "XY";
+    auto result = (*file)->write(as_bytes(payload), 2);
+
+    ASSERT_TRUE(result.has_value());
+    EXPECT_EQ(*result, payload.size());
+    EXPECT_EQ(read_all(path), "AAXYAAAA");
+}
+
+TEST_F(StdFileTest, WriteRoundTripsThroughRead) {
+    auto path = tmp_path("roundtrip.db");
+
+    auto file = sqlite::os::open(path, {.create = true});
+    ASSERT_TRUE(file.has_value());
+
+    constexpr std::string_view payload = "round trip data";
+    ASSERT_TRUE((*file)->write(as_bytes(payload), 0).has_value());
+
+    std::array<std::byte, payload.size()> buf{};
+    auto read_result = (*file)->read(buf, 0);
+
+    ASSERT_TRUE(read_result.has_value());
+    EXPECT_EQ(*read_result, payload.size());
+    EXPECT_EQ(std::string_view(reinterpret_cast<const char*>(buf.data()), buf.size()), payload);
+}

@@ -64,7 +64,9 @@ namespace sqlite::os {
             return std::unexpected(make_error(ErrorCode::InvalidArgument, std::format("path {} is not a file", path.string())));
         }
 
-        int flags = O_RDWR;
+        // O_RDONLY/O_RDWR are mutually exclusive access modes, not OR-able flags
+        // (O_RDONLY is 0), so the access mode must be chosen, not accumulated.
+        int flags = opts.read_only ? O_RDONLY : O_RDWR;
 
         if (opts.create) {
             flags |= O_CREAT;
@@ -78,11 +80,10 @@ namespace sqlite::os {
             flags |= O_TRUNC;
         }
 
-        if (opts.read_only) {
-            flags |= O_RDONLY;
-        }
-
-        auto fd = ::open(path.string().c_str(), flags);
+        // When O_CREAT is set, open() reads a mode argument; omitting it leaves
+        // the new file's permissions undefined. 0644 = owner read/write, group/other read.
+        constexpr mode_t kCreateMode = 0644;
+        auto fd = ::open(path.string().c_str(), flags, kCreateMode);
         if (fd == -1) {
             return std::unexpected(map_errno(errno, path, "open"));
         }
@@ -113,7 +114,22 @@ namespace sqlite::os {
 
     auto StdFile::write(std::span<const std::byte> buf, uint64_t offset)
         -> std::expected<size_t, Error> {
-        return std::unexpected(make_error(ErrorCode::NotSupported, "not implemented"));
+
+        if (fd_ == -1) {
+            return std::unexpected(map_errno(EBADF, path_, "write"));
+        }
+
+        if (buf.empty()) {
+            return 0;
+        }
+
+        auto result = ::pwrite(fd_, buf.data(), buf.size(), offset);
+
+        if (result == -1) {
+            return std::unexpected(map_errno(errno, path_, "write"));
+        }
+
+        return result;
     }
 
     auto StdFile::size() -> std::expected<uint64_t, Error> {
