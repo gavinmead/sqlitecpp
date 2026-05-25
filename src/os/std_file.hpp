@@ -17,7 +17,7 @@ namespace sqlite::os {
     /// @param ec        The errno value captured immediately after the failed syscall.
     /// @param path      The file path involved, included in the error message.
     /// @param operation A short label for the syscall (e.g. "open", "pread", "fsync").
-    Error map_errno(int ec, const std::filesystem::path& path, std::string_view operation);
+    [[nodiscard]] Error map_errno(int ec, const std::filesystem::path& path, std::string_view operation);
 
     /// POSIX-based implementation of the File interface.
     ///
@@ -72,13 +72,11 @@ namespace sqlite::os {
             -> std::expected<std::unique_ptr<File>, Error>;
 
     private:
-        explicit StdFile(int fd, std::filesystem::path path, bool is_read_only)
-            : fd_(fd), path_(std::move(path)), is_read_only_(is_read_only) {};
+        explicit StdFile(int fd, std::filesystem::path path)
+            : fd_(fd), path_(std::move(path)) {};
 
         int fd_;
         std::filesystem::path path_;
-        bool is_read_only_;
-
     };
 
 }

@@ -19,7 +19,6 @@ namespace sqlite::os {
                 return make_error(ErrorCode::AlreadyExists,
                     std::format("{} failed: {} already exists", operation, path.string()));
             case EACCES:
-            case EAGAIN:
                 return make_error(ErrorCode::PermissionDenied,
                     std::format("{} failed: permission denied for {}", operation, path.string()));
             case EBADF:
@@ -44,7 +43,11 @@ namespace sqlite::os {
     }
 
     StdFile::~StdFile() {
-        close(fd_);
+        // close() can fail (notably on NFS), but a destructor has no way to report
+        // it, so the result is intentionally discarded. fd_ is reset to guard
+        // against accidental reuse if the class grows more teardown logic later.
+        (void)::close(fd_);
+        fd_ = -1;
     }
 
     /// Opens a file at the given path and returns a File handle.
@@ -56,16 +59,22 @@ namespace sqlite::os {
     ///   - EACCES -> PermissionDenied
     ///   - other  -> IoError
     ///
+    /// The regular-file check is performed by fstat()-ing the descriptor returned
+    /// by ::open() rather than stat()-ing the path beforehand. This avoids a
+    /// time-of-check/time-of-use race where the path could be swapped (e.g. for a
+    /// symlink) between the check and the open.
+    ///
     /// @param path Filesystem path to the file to open or create.
     /// @param opts Controls creation, exclusivity, truncation, and read-only mode.
     /// @return A unique_ptr<File> on success, or an Error describing the failure.
     auto open(const std::filesystem::path& path, OpenOptions opts)
           -> std::expected<std::unique_ptr<File>, Error> {
 
-        auto file_exists = exists(path);
-
-        if (file_exists && !is_regular_file(path)) {
-            return std::unexpected(make_error(ErrorCode::InvalidArgument, std::format("path {} is not a file", path.string())));
+        // A read-only handle can never satisfy a create, so the combination is a
+        // caller error rather than something to silently accept.
+        if (opts.read_only && opts.create) {
+            return std::unexpected(make_error(ErrorCode::InvalidArgument,
+                std::format("open {}: read_only and create are mutually exclusive", path.string())));
         }
 
         // O_RDONLY/O_RDWR are mutually exclusive access modes, not OR-able flags
@@ -84,15 +93,37 @@ namespace sqlite::os {
             flags |= O_TRUNC;
         }
 
-        // When O_CREAT is set, open() reads a mode argument; omitting it leaves
-        // the new file's permissions undefined. 0644 = owner read/write, group/other read.
+        // The mode argument only applies when creating; pass it only with O_CREAT
+        // so a reader isn't misled into thinking it always takes effect.
+        // 0644 = owner read/write, group/other read.
         constexpr mode_t kCreateMode = 0644;
-        auto fd = ::open(path.string().c_str(), flags, kCreateMode);
+        auto fd = (flags & O_CREAT)
+            ? ::open(path.string().c_str(), flags, kCreateMode)
+            : ::open(path.string().c_str(), flags);
         if (fd == -1) {
+            // Opening a directory with a writable mode fails with EISDIR; surface
+            // it as the same "not a file" InvalidArgument as other non-regular paths.
+            if (errno == EISDIR) {
+                return std::unexpected(make_error(ErrorCode::InvalidArgument,
+                    std::format("path {} is not a file", path.string())));
+            }
             return std::unexpected(map_errno(errno, path, "open"));
         }
 
-        return std::unique_ptr<File>(new StdFile(fd, path, opts.read_only));
+        struct stat statbuf;
+        if (::fstat(fd, &statbuf) == -1) {
+            auto err = map_errno(errno, path, "fstat"); // GCOVR_EXCL_LINE
+            (void)::close(fd);                          // GCOVR_EXCL_LINE
+            return std::unexpected(err);                // GCOVR_EXCL_LINE
+        }
+
+        if (!S_ISREG(statbuf.st_mode)) {
+            (void)::close(fd);
+            return std::unexpected(make_error(ErrorCode::InvalidArgument,
+                std::format("path {} is not a file", path.string())));
+        }
+
+        return std::unique_ptr<File>(new StdFile(fd, path));
     }
 
     auto StdFile::read(std::span<std::byte> buf, uint64_t offset)
@@ -107,13 +138,19 @@ namespace sqlite::os {
             return 0;
         }
 
-        auto result = ::pread(fd_, buf.data(), buf.size(), offset);
+        // Retry on EINTR: a signal can interrupt the syscall before any bytes are
+        // transferred, which is not a real error. A short read still returns here
+        // (callers handle short reads per the File contract).
+        ssize_t result;
+        do {
+            result = ::pread(fd_, buf.data(), buf.size(), offset);
+        } while (result == -1 && errno == EINTR);
 
         if (result == -1) {
             return std::unexpected(map_errno(errno, path_, "read")); // GCOVR_EXCL_LINE
         }
 
-        return result;
+        return static_cast<size_t>(result);
     }
 
     auto StdFile::write(std::span<const std::byte> buf, uint64_t offset)
@@ -127,13 +164,18 @@ namespace sqlite::os {
             return 0;
         }
 
-        auto result = ::pwrite(fd_, buf.data(), buf.size(), offset);
+        // Retry on EINTR (see read()). A short write is still returned to the
+        // caller, who is responsible for writing the remainder.
+        ssize_t result;
+        do {
+            result = ::pwrite(fd_, buf.data(), buf.size(), offset);
+        } while (result == -1 && errno == EINTR);
 
         if (result == -1) {
             return std::unexpected(map_errno(errno, path_, "write"));
         }
 
-        return result;
+        return static_cast<size_t>(result);
     }
 
     auto StdFile::size() -> std::expected<uint64_t, Error> {

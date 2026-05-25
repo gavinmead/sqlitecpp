@@ -1,9 +1,7 @@
 #include <array>
 #include <cstdlib>
 #include <filesystem>
-#include <format>
 #include <fstream>
-#include <random>
 #include <string>
 #include <unistd.h>
 #include <gmock/gmock-matchers.h>
@@ -25,14 +23,11 @@ protected:
     fs::path tmp_dir_;
 
     void SetUp() override {
-        auto base = fs::temp_directory_path();
-
-        std::random_device rd;
-        std::mt19937 gen(rd());
-        std::uniform_int_distribution<uint64_t> dist;
-
-        tmp_dir_ = base / std::format("sqlitecpp_test_{}", dist(gen));
-        fs::create_directory(tmp_dir_);
+        // mkdtemp atomically creates a uniquely-named directory, avoiding any
+        // chance of a name collision (unlike a random suffix we check ourselves).
+        std::string tmpl = (fs::temp_directory_path() / "sqlitecpp_test_XXXXXX").string();
+        ASSERT_NE(::mkdtemp(tmpl.data()), nullptr) << "mkdtemp failed";
+        tmp_dir_ = tmpl;
     }
 
     void TearDown() override {
@@ -85,13 +80,15 @@ TEST_F(StdFileTest, OpenCreateNew) {
     EXPECT_NE(*result, nullptr);
 }
 
-TEST_F(StdFileTest, ReadSqliteHeaderEmptyBuffer) {
-    auto db_path = fs::path(TEST_FIXTURES_DIR) / "test.db";
+// Every SQLite database begins with the 16-byte magic string "SQLite format 3\0".
+static constexpr std::string_view kSqliteHeader{"SQLite format 3\0", 16};
 
-    auto file = sqlite::os::open(db_path, {.read_only = true});
+TEST_F(StdFileTest, ReadEmptyBufferReturnsZero) {
+    auto path = create_file("header.db", std::string(kSqliteHeader));
+
+    auto file = sqlite::os::open(path, {.read_only = true});
     ASSERT_TRUE(file.has_value());
 
-    // SQLite header is always "SQLite format 3\0" (16 bytes)
     std::array<std::byte, 0> buf{};
     auto result = (*file)->read(buf, 0);
 
@@ -99,13 +96,12 @@ TEST_F(StdFileTest, ReadSqliteHeaderEmptyBuffer) {
     EXPECT_EQ(result, 0);
 }
 
-TEST_F(StdFileTest, ReadSqliteHeader) {
-    auto db_path = fs::path(TEST_FIXTURES_DIR) / "test.db";
+TEST_F(StdFileTest, ReadReturnsFileContents) {
+    auto path = create_file("header.db", std::string(kSqliteHeader));
 
-    auto file = sqlite::os::open(db_path, {.read_only = true});
+    auto file = sqlite::os::open(path, {.read_only = true});
     ASSERT_TRUE(file.has_value());
 
-    // SQLite header is always "SQLite format 3\0" (16 bytes)
     std::array<std::byte, 16> buf{};
     auto result = file.value()->read(buf, 0);
 
@@ -116,8 +112,7 @@ TEST_F(StdFileTest, ReadSqliteHeader) {
     EXPECT_EQ(header, "SQLite format 3");
 }
 
-TEST_F(StdFileTest, FixtureCreatesAndCleansUpTempDir) {
-    // Verify the directory exists during the test
+TEST_F(StdFileTest, FixtureProvidesTempDir) {
     EXPECT_TRUE(fs::exists(tmp_dir_));
     EXPECT_TRUE(fs::is_directory(tmp_dir_));
 }
@@ -398,4 +393,23 @@ TEST_F(StdFileTest, TruncateReadOnlyFileFails) {
 
     ASSERT_FALSE(result.has_value());
     EXPECT_EQ(result.error().code, ErrorCode::IoError);
+}
+
+TEST_F(StdFileTest, OpenReadOnlyWithCreateIsRejected) {
+    auto path = tmp_path("ro_create.db");
+
+    auto result = sqlite::os::open(path, {.read_only = true, .create = true});
+
+    ASSERT_FALSE(result.has_value());
+    EXPECT_EQ(result.error().code, ErrorCode::InvalidArgument);
+}
+
+TEST_F(StdFileTest, OpenNonRegularFileIsRejected) {
+    // /dev/null is a character-special device, not a regular file. open()
+    // succeeds at the syscall level, so this exercises the post-open fstat check.
+    auto result = sqlite::os::open("/dev/null", {});
+
+    ASSERT_FALSE(result.has_value());
+    EXPECT_EQ(result.error().code, ErrorCode::InvalidArgument);
+    EXPECT_THAT(result.error().message, HasSubstr("not a file"));
 }

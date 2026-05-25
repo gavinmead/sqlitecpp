@@ -38,6 +38,8 @@ namespace sqlite::os {
         /// @param buf    Data to write. Extends the file if offset + buf.size() > size().
         /// @param offset Byte offset from the start of the file.
         /// @returns      Number of bytes actually written, or an Error on failure.
+        ///               May be a short write (result < buf.size()); callers must
+        ///               loop to write the remaining bytes.
         [[nodiscard]] virtual auto write(std::span<const std::byte> buf, uint64_t offset)
             -> std::expected<size_t, Error> = 0;
 
