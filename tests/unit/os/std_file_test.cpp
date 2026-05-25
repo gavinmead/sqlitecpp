@@ -262,3 +262,42 @@ TEST_F(StdFileTest, SizeIncludesSparseGapFromOffsetWrite) {
     ASSERT_TRUE(result.has_value());
     EXPECT_EQ(*result, offset + payload.size());
 }
+
+TEST_F(StdFileTest, SyncSucceedsOnOpenFile) {
+    auto path = tmp_path("sync.db");
+
+    auto file = sqlite::os::open(path, {.create = true});
+    ASSERT_TRUE(file.has_value());
+
+    auto result = (*file)->sync();
+
+    EXPECT_TRUE(result.has_value());
+}
+
+TEST_F(StdFileTest, SyncSucceedsAfterWrite) {
+    auto path = tmp_path("sync_write.db");
+
+    auto file = sqlite::os::open(path, {.create = true});
+    ASSERT_TRUE(file.has_value());
+
+    constexpr std::string_view payload = "durable bytes";
+    ASSERT_TRUE((*file)->write(as_bytes(payload), 0).has_value());
+
+    auto result = (*file)->sync();
+
+    EXPECT_TRUE(result.has_value());
+    // Data remains readable after the flush.
+    EXPECT_EQ(read_all(path), payload);
+}
+
+TEST_F(StdFileTest, SyncIsIdempotent) {
+    auto path = tmp_path("sync_twice.db");
+
+    auto file = sqlite::os::open(path, {.create = true});
+    ASSERT_TRUE(file.has_value());
+
+    ASSERT_TRUE((*file)->write(as_bytes("data"), 0).has_value());
+
+    EXPECT_TRUE((*file)->sync().has_value());
+    EXPECT_TRUE((*file)->sync().has_value());
+}

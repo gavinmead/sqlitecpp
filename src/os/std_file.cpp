@@ -147,7 +147,15 @@ namespace sqlite::os {
     }
 
     auto StdFile::sync() -> std::expected<void, Error> {
-        return std::unexpected(make_error(ErrorCode::NotSupported, "not implemented"));
+        if (fd_ == -1) {
+            return std::unexpected(map_errno(EBADF, path_, "sync"));
+        }
+
+        auto result = ::fsync(fd_);
+        if (result == -1) {
+            return std::unexpected(map_errno(errno, path_, "sync"));
+        }
+        return {};
     }
 
     auto StdFile::truncate(uint64_t new_size) -> std::expected<void, Error> {
