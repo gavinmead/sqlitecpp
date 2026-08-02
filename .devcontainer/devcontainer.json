@@ -6,6 +6,9 @@
     "source=sqlitecpp-conan,target=/home/ubuntu/.conan2,type=volume",
     "source=sqlitecpp-ccache,target=/home/ubuntu/.cache/ccache,type=volume"
   ],
+  // The named volumes mount empty and root-owned over ~/.conan2 and ~/.cache/ccache,
+  // shadowing the Conan profile baked into the image. So chown them to the ubuntu
+  // user and re-run `conan profile detect` to recreate the default profile here.
   "postCreateCommand": "sudo chown -R ubuntu:ubuntu ~/.conan2 ~/.cache/ccache && conan profile detect --force || true",
   "customizations": {
     "vscode": {

@@ -59,3 +59,6 @@ Runs a full IDE backend inside the container, reading `.devcontainer/devcontaine
   ```
 - **Architecture:** the image is `linux/arm64` on Apple Silicon. CI runs `linux/amd64`; this is fine
   because the project has no architecture-specific code.
+- **Passwordless sudo:** the `ubuntu` user has `NOPASSWD:ALL` sudo. That is deliberate for a local,
+  throwaway dev container (installing extra tooling, chowning mounted volumes). Do **not** copy this
+  pattern into any CI or production-adjacent image.

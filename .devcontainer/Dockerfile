@@ -8,6 +8,12 @@
 #   - CLion Docker toolchain      (docker build -t sqlitecpp-dev:latest .devcontainer)
 #   - CLion native Dev Containers (.devcontainer/devcontainer.json)
 #   - VS Code Dev Containers      (.devcontainer/devcontainer.json)
+#
+# The base tag is intentionally unpinned (no @sha256 digest): this is a
+# dev-only image, and CI itself provisions on the mutable `ubuntu-24.04`
+# runner with unpinned apt packages. Pinning a digest here would *diverge*
+# from CI rather than match it. Accept the drift; the pinned versions that
+# matter (GCC 14, Clang 18) are named explicitly below.
 FROM ubuntu:24.04
 
 ENV DEBIAN_FRONTEND=noninteractive
@@ -57,4 +63,8 @@ USER ubuntu
 WORKDIR /home/ubuntu
 
 # Seed a default Conan profile (detects gcc-14 / libstdc++11) for the ubuntu user.
+# This baked-in profile is what the non-volume consumers use: `make docker-shell`,
+# `docker run`, and the CLion Docker toolchain, none of which mount a Conan volume.
+# Under devcontainer.json the named `sqlitecpp-conan` volume mounts over ~/.conan2
+# and shadows this profile, so postCreateCommand re-runs detect there.
 RUN conan profile detect --force
