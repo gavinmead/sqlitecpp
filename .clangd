@@ -1,0 +1,16 @@
+# clangd configuration for SQLiteCpp.
+#
+# Points clangd at the CMake-generated compilation database so it sees the
+# correct include paths and the C++23 standard (-std=c++2b). Generate it with:
+#   conan install . --output-folder=build/dev-debug --build=missing -s build_type=Debug
+#   cmake --preset dev-debug   (or `make build`)
+#
+# If your build lives elsewhere, change CompilationDatabase to that directory
+# (the path is relative to this .clangd file).
+CompileFlags:
+  CompilationDatabase: build/dev-debug
+  # Fallback flags applied when a file has no entry in the database yet
+  # (e.g. a brand-new .cpp not yet configured by CMake).
+  Add:
+    - -std=c++2b
+    - -Iinclude
