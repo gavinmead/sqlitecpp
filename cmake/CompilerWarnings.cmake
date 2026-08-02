@@ -2,7 +2,7 @@
 
 function(target_set_warnings target)
     target_compile_options(${target} PRIVATE
-        $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:
+        $<$<CXX_COMPILER_ID:GNU,Clang>:
             -Wall
             -Wextra
             -Wpedantic
