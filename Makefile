@@ -3,7 +3,10 @@
 
 .PHONY: all build test clean distclean \
         debug release coverage sanitizer-asan sanitizer-tsan sanitizer-ubsan \
-        format lint help
+        format lint docker-image docker-shell help
+
+# Development container image (see docs/DEVCONTAINER.md)
+DOCKER_IMAGE ?= sqlitecpp-dev:latest
 
 # Default target
 all: build
@@ -83,6 +86,18 @@ lint: build
 	find src -name '*.cpp' | xargs clang-tidy -p build/dev-debug
 
 #
+# Development container (Linux workflow on macOS/CLion)
+#
+
+# Build the dev container image used by CLion's Docker toolchain
+docker-image:
+	docker build -t $(DOCKER_IMAGE) .devcontainer
+
+# Open a shell in the dev container with the repo mounted at /work
+docker-shell:
+	docker run --rm -it -v "$$PWD":/work -w /work $(DOCKER_IMAGE) bash
+
+#
 # Help
 #
 
@@ -110,3 +125,7 @@ help:
 	@echo "  format           Format code with clang-format"
 	@echo "  format-check     Check code formatting"
 	@echo "  lint             Run clang-tidy"
+	@echo ""
+	@echo "Dev Container (Linux workflow):"
+	@echo "  docker-image     Build the dev container image ($(DOCKER_IMAGE))"
+	@echo "  docker-shell     Open a shell in the dev container"

@@ -1,0 +1,18 @@
+{
+  "name": "SQLiteCpp — Ubuntu 24.04 (arm64)",
+  "build": { "dockerfile": "Dockerfile" },
+  "remoteUser": "ubuntu",
+  "mounts": [
+    "source=sqlitecpp-conan,target=/home/ubuntu/.conan2,type=volume",
+    "source=sqlitecpp-ccache,target=/home/ubuntu/.cache/ccache,type=volume"
+  ],
+  "postCreateCommand": "sudo chown -R ubuntu:ubuntu ~/.conan2 ~/.cache/ccache && conan profile detect --force || true",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "llvm-vs-code-extensions.vscode-clangd",
+        "ms-vscode.cmake-tools"
+      ]
+    }
+  }
+}

@@ -17,34 +17,6 @@
             }
         },
         {
-            "name": "clion-base",
-            "hidden": true,
-            "generator": "Ninja",
-            "binaryDir": "${sourceDir}/cmake-build-${presetName}",
-            "cacheVariables": {
-                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
-                "CMAKE_PROJECT_TOP_LEVEL_INCLUDES": "${sourceDir}/cmake/conan_provider.cmake"
-            }
-        },
-        {
-            "name": "clion-debug",
-            "inherits": "clion-base",
-            "displayName": "CLion Debug",
-            "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Debug",
-                "SQLITECPP_BUILD_TESTS": "ON"
-            }
-        },
-        {
-            "name": "clion-release",
-            "inherits": "clion-base",
-            "displayName": "CLion Release",
-            "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Release",
-                "SQLITECPP_BUILD_TESTS": "ON"
-            }
-        },
-        {
             "name": "dev-debug",
             "inherits": "base",
             "displayName": "Development Debug",
@@ -148,14 +120,6 @@
     ],
     "buildPresets": [
         {
-            "name": "clion-debug",
-            "configurePreset": "clion-debug"
-        },
-        {
-            "name": "clion-release",
-            "configurePreset": "clion-release"
-        },
-        {
             "name": "dev-debug",
             "configurePreset": "dev-debug"
         },
@@ -197,20 +161,6 @@
         }
     ],
     "testPresets": [
-        {
-            "name": "clion-debug",
-            "configurePreset": "clion-debug",
-            "output": {
-                "outputOnFailure": true
-            }
-        },
-        {
-            "name": "clion-release",
-            "configurePreset": "clion-release",
-            "output": {
-                "outputOnFailure": true
-            }
-        },
         {
             "name": "dev-debug",
             "configurePreset": "dev-debug",

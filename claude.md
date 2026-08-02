@@ -4,6 +4,8 @@
 
 SQLiteCpp is an educational reimplementation of core SQLite components in modern C++23. The goal is NOT to create a production database, but to provide a clear, well-documented codebase for learning how SQLite works internally.
 
+**Platform: Linux only.** The project targets Linux (Ubuntu 24.04, GCC 14 / Clang 18). Development on other hosts (e.g. macOS) is done inside the Linux dev container — see `docs/DEVCONTAINER.md`.
+
 ### Educational Goals
 - Understand B-tree storage engines and page management
 - Learn SQL parsing and query compilation
@@ -84,7 +86,7 @@ SQLiteCpp is an educational reimplementation of core SQLite components in modern
 |  +-------------------------------------------------------+  |
 +-------------------------------------------------------------+
 |                        OS Layer                              |
-|           (std::filesystem + platform abstractions)          |
+|            (std::filesystem + Linux/POSIX file I/O)          |
 +-------------------------------------------------------------+
 ```
 
@@ -141,8 +143,7 @@ namespace sqlite {
 
 ### CMake Presets
 Provide presets for common workflows:
-- `clion-debug` / `clion-release` - CLion IDE (auto-installs dependencies)
-- `dev-debug` / `dev-release` - Local development
+- `dev-debug` / `dev-release` - Local development (used by CLion in the dev container)
 - `ci-gcc-debug` / `ci-gcc-release` - CI with GCC
 - `ci-clang-debug` / `ci-clang-release` - CI with Clang
 - `sanitizer-asan` - Address Sanitizer build
@@ -150,10 +151,16 @@ Provide presets for common workflows:
 - `coverage` - Coverage build
 
 ### CLion Setup
-CLion presets automatically download and install Conan dependencies using cmake-conan:
-1. Open project in CLion
-2. Select "CLion Debug" or "CLion Release" profile in Settings > Build > CMake
-3. Build and run - dependencies are installed automatically
+Development happens inside the Linux dev container (`.devcontainer/`). Recommended path — CLion
+Docker toolchain:
+1. `make docker-image` to build `sqlitecpp-dev:latest`
+2. Settings > Build, Execution, Deployment > Toolchains > add a **Docker** toolchain using that image
+3. Settings > CMake > add a profile using the Docker toolchain and the `dev-debug` preset
+4. Build, run, and debug — `gdb` runs inside the container; Conan dependencies are installed on first
+   configure via cmake-conan
+
+CLion's native Dev Containers and VS Code read `.devcontainer/devcontainer.json` directly. Full
+instructions: `docs/DEVCONTAINER.md`.
 
 ### Build Commands (Makefile)
 ```bash
